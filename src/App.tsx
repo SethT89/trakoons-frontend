@@ -48,6 +48,7 @@ export default function App() {
     setMode(args.mode);
     setHostId(args.hostId);
     setPlayers(args.players);
+    history.pushState(null, '', '?code=' + args.roomCode);
     setPhase('lobby');
   }
 
@@ -56,6 +57,7 @@ export default function App() {
     setRoomCode('');
     setPlayerId('');
     setPlayers([]);
+    history.pushState(null, '', '/');
   }
 
   function handleGameStart(updatedPlayers: Player[], updatedMode: GameMode) {
