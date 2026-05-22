@@ -43,6 +43,7 @@ function drawAsset(
 
   // GPS Rings — drawn before the asset (behind it), no scale applied
   if (anim && elapsed < 700) {
+    ctx.save();
     ctx.strokeStyle = anim.color;
     ctx.lineWidth = 2;
 
@@ -61,7 +62,7 @@ function drawAsset(
       ctx.stroke();
     }
 
-    ctx.globalAlpha = 1;
+    ctx.restore();
   }
 
   // Scale pop — scale around the asset center
