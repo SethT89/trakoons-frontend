@@ -26,41 +26,95 @@ function drawBackground(ctx: CanvasRenderingContext2D, frenzy: boolean) {
   }
 }
 
-function drawAsset(ctx: CanvasRenderingContext2D, asset: GameAsset) {
+function drawAsset(
+  ctx: CanvasRenderingContext2D,
+  asset: GameAsset,
+  anim?: { startMs: number; color: string },
+) {
   const canvas = ctx.canvas;
   const x = gx(canvas, asset.x);
   const y = gy(canvas, asset.y);
   const w = gx(canvas, asset.w);
   const h = gy(canvas, asset.h);
+  const cx = x + w / 2;
+  const cy = y + h / 2;
 
-  // Fill with owner color or default
+  const elapsed = anim ? Date.now() - anim.startMs : 700;
+
+  // GPS Rings — drawn before the asset (behind it), no scale applied
+  if (anim && elapsed < 700) {
+    ctx.strokeStyle = anim.color;
+    ctx.lineWidth = 2;
+
+    const expand1 = 1 + elapsed / 700;
+    ctx.globalAlpha = 0.8 * (1 - elapsed / 700);
+    ctx.beginPath();
+    ctx.roundRect(cx - (w * expand1) / 2, cy - (h * expand1) / 2, w * expand1, h * expand1, 4);
+    ctx.stroke();
+
+    if (elapsed >= 180) {
+      const elapsed2 = elapsed - 180;
+      const expand2 = 1 + elapsed2 / 520;
+      ctx.globalAlpha = 0.7 * (1 - elapsed2 / 520);
+      ctx.beginPath();
+      ctx.roundRect(cx - (w * expand2) / 2, cy - (h * expand2) / 2, w * expand2, h * expand2, 4);
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha = 1;
+  }
+
+  // Scale pop — scale around the asset center
+  let scale = 1;
+  if (anim && elapsed < 700) {
+    if (elapsed < 100) {
+      scale = 1 + 0.22 * (elapsed / 100);
+    } else {
+      const t = (elapsed - 100) / 600;
+      scale = 1 + 0.22 * Math.pow(1 - t, 2);
+    }
+  }
+
+  if (scale !== 1) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+    ctx.translate(-cx, -cy);
+  }
+
+  // Asset body
   ctx.fillStyle = asset.ownerColor ?? '#555555';
   ctx.fillRect(x, y, w, h);
-
-  // Border
   ctx.strokeStyle = '#000000';
   ctx.lineWidth = asset.moving ? 2 : 1;
   ctx.strokeRect(x, y, w, h);
-
-  // Label
   const label = asset.type.split('-').map(s => s[0].toUpperCase()).join('');
   ctx.fillStyle = '#ffffff';
   ctx.font = `bold ${Math.max(8, Math.min(11, w / 3))}px monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(label, x + w / 2, y + h / 2);
-
-  // Direction arrow for moving assets
   if (asset.moving) {
     const arrowLen = Math.min(w, h) * 0.3;
     const angle = Math.atan2(asset.vy, asset.vx);
-    const cx = x + w / 2, cy = y + h / 2;
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(cx + Math.cos(angle) * arrowLen, cy + Math.sin(angle) * arrowLen);
     ctx.stroke();
+  }
+
+  // Color flash (on top of asset, inside scale transform)
+  if (anim && elapsed < 200) {
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.65 * (1 - elapsed / 200);
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = 1;
+  }
+
+  if (scale !== 1) {
+    ctx.restore();
   }
 }
 
@@ -115,15 +169,22 @@ export function render(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   myPlayerId: string,
+  anims: Map<string, { startMs: number; color: string }>,
 ) {
+  // Prune expired animations (>700ms old)
+  const now = Date.now();
+  for (const [id, anim] of anims) {
+    if (now - anim.startMs >= 700) anims.delete(id);
+  }
+
   drawBackground(ctx, state.frenzy);
 
   // Static assets first (behind moving ones)
   for (const asset of state.assets) {
-    if (!asset.moving) drawAsset(ctx, asset);
+    if (!asset.moving) drawAsset(ctx, asset, anims.get(asset.id));
   }
   for (const asset of state.assets) {
-    if (asset.moving) drawAsset(ctx, asset);
+    if (asset.moving) drawAsset(ctx, asset, anims.get(asset.id));
   }
 
   for (const player of state.players) {

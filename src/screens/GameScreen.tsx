@@ -19,13 +19,23 @@ export function GameScreen({ myPlayerId, mode, send, onMessage }: Props) {
   const posRef       = useRef({ x: 50, y: 50 });
   const { getDirection } = useGameInput();
   const rafRef       = useRef<number>(0);
+  const animRef      = useRef<Map<string, { startMs: number; color: string }>>(new Map());
 
   // Listen for gameState messages
   useEffect(() => {
     return onMessage(msg => {
       if (msg.type === 'gameState') {
+        // Detect ownership changes for tag animations
+        const prev = stateRef.current;
+        if (prev) {
+          for (const asset of msg.assets) {
+            const prevAsset = prev.assets.find(a => a.id === asset.id);
+            if (prevAsset && prevAsset.ownerId !== asset.ownerId && asset.ownerColor) {
+              animRef.current.set(asset.id, { startMs: Date.now(), color: asset.ownerColor });
+            }
+          }
+        }
         stateRef.current = msg;
-        // Keep local position in sync with server (server is authoritative)
         const me = msg.players.find(p => p.id === myPlayerId);
         if (me) posRef.current = { x: me.x, y: me.y };
       }
@@ -57,7 +67,7 @@ export function GameScreen({ myPlayerId, mode, send, onMessage }: Props) {
       }
 
       const ctx = canvas!.getContext('2d');
-      if (ctx && stateRef.current) render(ctx, stateRef.current, myPlayerId);
+      if (ctx && stateRef.current) render(ctx, stateRef.current, myPlayerId, animRef.current);
 
       rafRef.current = requestAnimationFrame(frame);
     }
