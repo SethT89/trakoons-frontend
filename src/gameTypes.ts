@@ -14,6 +14,43 @@ export interface Player {
   isBot: boolean;
 }
 
+export interface GameAsset {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  ownerId: string | null;
+  ownerColor: string | null;
+  cooldownUntil: number;
+  moving: boolean;
+  vx: number;
+  vy: number;
+}
+
+export interface GameState {
+  players: Array<Player & { x: number; y: number }>;
+  assets: GameAsset[];
+  timeLeft: number;
+  frenzy: boolean;
+}
+
+export interface GameOverScore {
+  id: string;
+  name: string;
+  color: string;
+  teamId: 0 | 1 | null;
+  assetCount: number;
+}
+
+export interface GameOverPayload {
+  scores: GameOverScore[];
+  teamScores?: { 0: number; 1: number };
+  winner: string;
+  winnerLabel: string;
+}
+
 export type ClientMessage =
   | { type: 'createRoom'; name: string }
   | { type: 'joinRoom';   name: string; code: string }
@@ -23,7 +60,8 @@ export type ClientMessage =
   | { type: 'addBot' }
   | { type: 'removeBot'; botId: string }
   | { type: 'setBotTeam'; botId: string; teamId: 0 | 1 }
-  | { type: 'startGame' };
+  | { type: 'startGame' }
+  | { type: 'move'; x: number; y: number };
 
 export type ServerMessage =
   | { type: 'roomCreated'; roomCode: string; playerId: string; color: string; mode: GameMode; hostId: string; players: Player[] }
@@ -37,4 +75,6 @@ export type ServerMessage =
   | { type: 'hostChanged';    hostId: string }
   | { type: 'countdown';      count: number }
   | { type: 'gameStarted';    players: Player[]; mode: GameMode }
-  | { type: 'error';          message: string };
+  | { type: 'error';          message: string }
+  | ({ type: 'gameState' } & GameState)
+  | ({ type: 'gameOver' } & GameOverPayload);
