@@ -95,7 +95,15 @@ export default function App() {
   }
 
   if (phase === 'playing') {
-    return <GameScreen players={players} mode={mode} myPlayerId={playerId} />;
+    return (
+      <GameScreen
+        players={players}
+        mode={mode}
+        myPlayerId={playerId}
+        send={send}
+        onMessage={onMessage}
+      />
+    );
   }
 
   if (phase === 'results') {
