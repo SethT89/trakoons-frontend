@@ -105,6 +105,13 @@ function HudPanel({ stateRef, myPlayerId, mode }: HudProps) {
 
   return (
     <div className="w-24 bg-gray-900 flex flex-col p-1.5 gap-1 shrink-0">
+      {/* Frenzy badge */}
+      {state?.frenzy && (
+        <div className="bg-red-600 animate-pulse text-white text-center font-black text-[9px] tracking-[0.2em] rounded px-1 py-0.5">
+          ⚡ FRENZY
+        </div>
+      )}
+
       {/* Timer */}
       <div className={`${timerColor} text-white text-center font-bold text-sm rounded px-1 py-0.5 tracking-widest mb-1`}>
         {mm}:{ss}
