@@ -22,7 +22,7 @@ function isMobile() {
 
 export function HomeScreen({ onRoomReady, send, onMessage, connected }: Props) {
   const urlCode = new URLSearchParams(window.location.search).get('code')?.toUpperCase() ?? null;
-  const [tab, setTab] = useState<'join' | 'create'>(urlCode ? 'join' : 'join');
+  const [tab, setTab] = useState<'join' | 'create'>(urlCode ? 'join' : 'create');
   const [name, setName] = useState(() => localStorage.getItem('trakoons_player_name') || '');
   const [roomCode, setRoomCode] = useState(urlCode || '');
   const [error, setError] = useState('');

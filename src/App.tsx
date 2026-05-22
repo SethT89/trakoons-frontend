@@ -18,12 +18,17 @@ export default function App() {
   const [mode, setMode] = useState<GameMode>('ffa');
   const [countdown, setCountdown] = useState(3);
 
-  // Handle countdown tick
+  // Handle countdown ticks and game start at App level so they work across all phases
   useEffect(() => {
     return onMessage(msg => {
       if (msg.type === 'countdown') {
         setCountdown(msg.count);
         setPhase('countdown');
+      }
+      if (msg.type === 'gameStarted') {
+        setPlayers(msg.players);
+        setMode(msg.mode);
+        setPhase('playing');
       }
     });
   }, [onMessage]);
