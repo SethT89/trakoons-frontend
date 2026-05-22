@@ -17,7 +17,7 @@ interface Props {
   onMessage: (handler: (msg: ServerMessage) => void) => () => void;
 }
 
-const MIN_PLAYERS = 5;
+const MIN_PLAYERS = 2;
 
 export function LobbyScreen({
   roomCode, playerId, hostId, players, mode,
@@ -52,8 +52,7 @@ export function LobbyScreen({
   }, [onMessage, onPlayersChange, onModeChange, onHostChange, onGameStart, onLeave]);
 
   function copyLink() {
-    const url = `${window.location.origin}${window.location.pathname}?code=${roomCode}`;
-    navigator.clipboard.writeText(url).then(() => {
+    navigator.clipboard.writeText(roomCode).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -96,7 +95,7 @@ export function LobbyScreen({
             onClick={copyLink}
             className="px-4 py-2 rounded-lg bg-stone-700 hover:bg-stone-600 text-sm font-semibold transition-colors"
           >
-            {copied ? 'Copied!' : 'Copy Link'}
+            {copied ? 'Copied!' : 'Copy Code'}
           </button>
         </div>
 
@@ -124,7 +123,17 @@ export function LobbyScreen({
         {/* Team picker (teams mode) */}
         {mode === 'teams' && (
           <div className="mb-4">
-            <p className="text-stone-400 text-xs uppercase tracking-widest mb-2">Pick Your Team</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-stone-400 text-xs uppercase tracking-widest">Pick Your Team</p>
+              {isHost && players.length < 10 && (
+                <button
+                  onClick={() => send({ type: 'addBot' })}
+                  className="text-xs text-stone-400 hover:text-orange-400 transition-colors"
+                >
+                  + Add Bot
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               {[0, 1].map(teamId => (
                 <button
@@ -138,7 +147,10 @@ export function LobbyScreen({
                   </p>
                   {(teamId === 0 ? team0 : team1).map(p => (
                     <p key={p.id} className="text-xs text-stone-300">
-                      {p.name}{p.id === hostId ? ' 👑' : ''}{p.id === playerId ? ' (you)' : ''}
+                      {p.name}
+                      {p.isBot ? ' [BOT]' : ''}
+                      {p.id === hostId ? ' 👑' : ''}
+                      {p.id === playerId ? ' (you)' : ''}
                     </p>
                   ))}
                   {(teamId === 0 ? team0 : team1).length === 0 && (
@@ -158,9 +170,19 @@ export function LobbyScreen({
         {/* Player list (FFA mode) */}
         {mode === 'ffa' && (
           <div className="mb-4">
-            <p className="text-stone-400 text-xs uppercase tracking-widest mb-2">
-              Players ({players.length}/10)
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-stone-400 text-xs uppercase tracking-widest">
+                Players ({players.length}/10)
+              </p>
+              {isHost && players.length < 10 && (
+                <button
+                  onClick={() => send({ type: 'addBot' })}
+                  className="text-xs text-stone-400 hover:text-orange-400 transition-colors"
+                >
+                  + Add Bot
+                </button>
+              )}
+            </div>
             <div className="space-y-2">
               {players.map(p => (
                 <div key={p.id} className="flex items-center justify-between bg-stone-800 rounded-lg px-3 py-2">
@@ -168,15 +190,19 @@ export function LobbyScreen({
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getPlayerColor(p) }} />
                     <span className="text-sm font-medium">
                       {p.name}
+                      {p.isBot && <span className="ml-1 text-stone-500 text-xs">[BOT]</span>}
                       {p.id === hostId && <span className="ml-1 text-yellow-400 text-xs">👑</span>}
                       {p.id === playerId && <span className="ml-1 text-stone-500 text-xs">(you)</span>}
                     </span>
                   </div>
                   {isHost && p.id !== playerId && (
                     <button
-                      onClick={() => send({ type: 'kickPlayer', playerId: p.id })}
+                      onClick={() => p.isBot
+                        ? send({ type: 'removeBot', botId: p.id })
+                        : send({ type: 'kickPlayer', playerId: p.id })
+                      }
                       className="text-stone-600 hover:text-red-400 text-xs transition-colors"
-                      title={`Kick ${p.name}`}
+                      title={p.isBot ? `Remove ${p.name}` : `Kick ${p.name}`}
                     >
                       ✕
                     </button>

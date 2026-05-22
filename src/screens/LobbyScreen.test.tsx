@@ -17,6 +17,7 @@ function makePlayers(count: number): Player[] {
     name: `Player ${i + 1}`,
     color: '#FF6B35',
     teamId: null,
+    isBot: false,
   }));
 }
 
@@ -55,13 +56,13 @@ describe('LobbyScreen', () => {
     expect(screen.queryByRole('button', { name: 'START GAME' })).not.toBeInTheDocument();
   });
 
-  it('disables START GAME when fewer than 5 players', () => {
-    render(<LobbyScreen {...baseProps} players={makePlayers(3)} />);
+  it('disables START GAME when fewer than 2 players', () => {
+    render(<LobbyScreen {...baseProps} players={makePlayers(1)} />);
     expect(screen.getByRole('button', { name: 'START GAME' })).toBeDisabled();
   });
 
-  it('enables START GAME when 5+ players', () => {
-    render(<LobbyScreen {...baseProps} players={makePlayers(5)} />);
+  it('enables START GAME when 2+ players', () => {
+    render(<LobbyScreen {...baseProps} players={makePlayers(2)} />);
     expect(screen.getByRole('button', { name: 'START GAME' })).not.toBeDisabled();
   });
 

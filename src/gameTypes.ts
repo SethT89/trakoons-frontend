@@ -11,6 +11,7 @@ export interface Player {
   name: string;
   color: string;
   teamId: 0 | 1 | null;
+  isBot: boolean;
 }
 
 export type ClientMessage =
@@ -19,6 +20,8 @@ export type ClientMessage =
   | { type: 'setMode';    mode: GameMode }
   | { type: 'setTeam';    teamId: 0 | 1 }
   | { type: 'kickPlayer'; playerId: string }
+  | { type: 'addBot' }
+  | { type: 'removeBot'; botId: string }
   | { type: 'startGame' };
 
 export type ServerMessage =

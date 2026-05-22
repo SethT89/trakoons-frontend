@@ -127,7 +127,12 @@ export function HomeScreen({ onRoomReady, send, onMessage, connected }: Props) {
                 placeholder="Room code (e.g. ABCD)"
                 value={roomCode}
                 maxLength={4}
-                onChange={e => { setRoomCode(e.target.value.toUpperCase()); setError(''); }}
+                onChange={e => {
+                  const val = e.target.value;
+                  const extracted = new URLSearchParams(val.includes('?') ? val.split('?')[1] : '').get('code');
+                  setRoomCode((extracted ?? val).toUpperCase().slice(0, 4));
+                  setError('');
+                }}
                 className="w-full px-4 py-3 rounded-lg bg-stone-800 border border-stone-600 text-orange-100 placeholder-stone-500 focus:outline-none focus:border-orange-500 uppercase tracking-widest"
               />
               {error && <p className="text-red-400 text-xs mt-1 ml-1">{error}</p>}
