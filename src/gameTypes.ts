@@ -13,6 +13,14 @@ export interface Player {
   teamId: 0 | 1 | null;
 }
 
+export type ClientMessage =
+  | { type: 'createRoom'; name: string }
+  | { type: 'joinRoom';   name: string; code: string }
+  | { type: 'setMode';    mode: GameMode }
+  | { type: 'setTeam';    teamId: 0 | 1 }
+  | { type: 'kickPlayer'; playerId: string }
+  | { type: 'startGame' };
+
 export type ServerMessage =
   | { type: 'roomCreated'; roomCode: string; playerId: string; color: string; mode: GameMode; hostId: string; players: Player[] }
   | { type: 'roomJoined';  roomCode: string; playerId: string; color: string; mode: GameMode; hostId: string; players: Player[] }

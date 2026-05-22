@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { GameMode, Player, ServerMessage, TEAM_COLORS } from '../gameTypes';
+import { ClientMessage, GameMode, Player, ServerMessage, TEAM_COLORS } from '../gameTypes';
 
 interface Props {
   roomCode: string;
@@ -13,7 +13,7 @@ interface Props {
   onHostChange: (hostId: string) => void;
   onGameStart: (players: Player[], mode: GameMode) => void;
   onLeave: () => void;
-  send: (msg: object) => void;
+  send: (msg: ClientMessage) => void;
   onMessage: (handler: (msg: ServerMessage) => void) => () => void;
 }
 
@@ -129,7 +129,7 @@ export function LobbyScreen({
               {[0, 1].map(teamId => (
                 <button
                   key={teamId}
-                  onClick={() => send({ type: 'setTeam', teamId })}
+                  onClick={() => send({ type: 'setTeam', teamId: teamId as 0 | 1 })}
                   style={{ borderColor: TEAM_COLORS[teamId as 0 | 1] }}
                   className={`rounded-xl p-3 border-2 text-left transition-all ${myTeamId === teamId ? 'opacity-100' : 'opacity-50 hover:opacity-75'}`}
                 >
@@ -219,7 +219,7 @@ export function LobbyScreen({
             </button>
             {players.length < MIN_PLAYERS && (
               <p className="text-stone-500 text-xs text-center mt-2">
-                Need {MIN_PLAYERS - players.length} more player{players.length < MIN_PLAYERS - 1 ? 's' : ''} to start
+                Need {MIN_PLAYERS - players.length} more player{(MIN_PLAYERS - players.length) !== 1 ? 's' : ''} to start
               </p>
             )}
           </div>

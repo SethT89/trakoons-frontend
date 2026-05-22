@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { GameMode, Player, ServerMessage } from '../gameTypes';
+import { ClientMessage, GameMode, Player, ServerMessage } from '../gameTypes';
 
 interface Props {
   onRoomReady: (args: {
@@ -10,7 +10,7 @@ interface Props {
     hostId: string;
     players: Player[];
   }) => void;
-  send: (msg: object) => void;
+  send: (msg: ClientMessage) => void;
   onMessage: (handler: (msg: ServerMessage) => void) => () => void;
   connected: boolean;
 }
@@ -77,7 +77,7 @@ export function HomeScreen({ onRoomReady, send, onMessage, connected }: Props) {
       const trimmedCode = roomCode.trim().toUpperCase();
       if (trimmedCode.length !== 4) { setError('Room code must be 4 letters'); return; }
       setLoading(true);
-      send({ type: 'joinRoom', name: trimmedName, roomCode: trimmedCode });
+      send({ type: 'joinRoom', name: trimmedName, code: trimmedCode });
     } else {
       setLoading(true);
       send({ type: 'createRoom', name: trimmedName });

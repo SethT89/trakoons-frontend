@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { ServerMessage } from './gameTypes';
+import { ClientMessage, ServerMessage } from './gameTypes';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080';
 
@@ -40,7 +40,7 @@ export function useGameSocket() {
     };
   }, [connect]);
 
-  const send = useCallback((msg: object) => {
+  const send = useCallback((msg: ClientMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(msg));
     }
