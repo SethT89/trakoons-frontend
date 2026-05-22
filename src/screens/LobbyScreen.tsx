@@ -63,12 +63,6 @@ export function LobbyScreen({
     return p.color;
   }
 
-  const myPlayer = players.find(p => p.id === playerId);
-  const myTeamId = myPlayer?.teamId ?? null;
-
-  const team0 = players.filter(p => p.teamId === 0);
-  const team1 = players.filter(p => p.teamId === 1);
-  const unassigned = players.filter(p => p.teamId === null);
 
   return (
     <div className="min-h-screen bg-stone-900 text-orange-100 p-6">
@@ -120,11 +114,13 @@ export function LobbyScreen({
           </div>
         )}
 
-        {/* Team picker (teams mode) */}
+        {/* Teams mode — unified player list with per-row team toggle */}
         {mode === 'teams' && (
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-stone-400 text-xs uppercase tracking-widest">Pick Your Team</p>
+              <p className="text-stone-400 text-xs uppercase tracking-widest">
+                Players ({players.length}/10)
+              </p>
               {isHost && players.length < 10 && (
                 <button
                   onClick={() => send({ type: 'addBot' })}
@@ -134,36 +130,65 @@ export function LobbyScreen({
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[0, 1].map(teamId => (
-                <button
-                  key={teamId}
-                  onClick={() => send({ type: 'setTeam', teamId: teamId as 0 | 1 })}
-                  style={{ borderColor: TEAM_COLORS[teamId as 0 | 1] }}
-                  className={`rounded-xl p-3 border-2 text-left transition-all ${myTeamId === teamId ? 'opacity-100' : 'opacity-50 hover:opacity-75'}`}
-                >
-                  <p className="font-bold text-sm mb-2" style={{ color: TEAM_COLORS[teamId as 0 | 1] }}>
-                    {teamId === 0 ? 'Team Orange' : 'Team Blue'}
-                  </p>
-                  {(teamId === 0 ? team0 : team1).map(p => (
-                    <p key={p.id} className="text-xs text-stone-300">
-                      {p.name}
-                      {p.isBot ? ' [BOT]' : ''}
-                      {p.id === hostId ? ' 👑' : ''}
-                      {p.id === playerId ? ' (you)' : ''}
-                    </p>
-                  ))}
-                  {(teamId === 0 ? team0 : team1).length === 0 && (
-                    <p className="text-xs text-stone-600 italic">No players yet</p>
-                  )}
-                </button>
-              ))}
+            <div className="space-y-2">
+              {players.map(p => {
+                const canToggleTeam = p.id === playerId || (isHost && p.isBot);
+                return (
+                  <div key={p.id} className="flex items-center justify-between bg-stone-800 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: p.teamId !== null ? TEAM_COLORS[p.teamId] : '#57534e' }} />
+                      <span className="text-sm font-medium">
+                        {p.name}
+                        {p.isBot && <span className="ml-1 text-stone-500 text-xs">[BOT]</span>}
+                        {p.id === hostId && <span className="ml-1 text-yellow-400 text-xs">👑</span>}
+                        {p.id === playerId && <span className="ml-1 text-stone-500 text-xs">(you)</span>}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {canToggleTeam && (
+                        <div className="flex rounded overflow-hidden border border-stone-600 text-xs font-semibold">
+                          <button
+                            onClick={() => p.isBot
+                              ? send({ type: 'setBotTeam', botId: p.id, teamId: 0 })
+                              : send({ type: 'setTeam', teamId: 0 })
+                            }
+                            className={`px-2 py-1 transition-colors ${p.teamId === 0 ? 'text-white' : 'text-stone-500 hover:text-stone-300'}`}
+                            style={p.teamId === 0 ? { backgroundColor: TEAM_COLORS[0] } : {}}
+                          >
+                            ORG
+                          </button>
+                          <button
+                            onClick={() => p.isBot
+                              ? send({ type: 'setBotTeam', botId: p.id, teamId: 1 })
+                              : send({ type: 'setTeam', teamId: 1 })
+                            }
+                            className={`px-2 py-1 transition-colors ${p.teamId === 1 ? 'text-white' : 'text-stone-500 hover:text-stone-300'}`}
+                            style={p.teamId === 1 ? { backgroundColor: TEAM_COLORS[1] } : {}}
+                          >
+                            BLU
+                          </button>
+                        </div>
+                      )}
+                      {p.teamId === null && !canToggleTeam && (
+                        <span className="text-stone-600 text-xs">no team</span>
+                      )}
+                      {isHost && p.id !== playerId && (
+                        <button
+                          onClick={() => p.isBot
+                            ? send({ type: 'removeBot', botId: p.id })
+                            : send({ type: 'kickPlayer', playerId: p.id })
+                          }
+                          className="text-stone-600 hover:text-red-400 text-xs transition-colors ml-1"
+                          title={p.isBot ? `Remove ${p.name}` : `Kick ${p.name}`}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            {unassigned.length > 0 && (
-              <p className="text-stone-500 text-xs mt-2">
-                {unassigned.map(p => p.name).join(', ')} — pick a team
-              </p>
-            )}
           </div>
         )}
 

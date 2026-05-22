@@ -22,6 +22,7 @@ export type ClientMessage =
   | { type: 'kickPlayer'; playerId: string }
   | { type: 'addBot' }
   | { type: 'removeBot'; botId: string }
+  | { type: 'setBotTeam'; botId: string; teamId: 0 | 1 }
   | { type: 'startGame' };
 
 export type ServerMessage =
