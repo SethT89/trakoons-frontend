@@ -22,7 +22,7 @@ function isMobile() {
 
 export function HomeScreen({ onRoomReady, send, onMessage, connected }: Props) {
   const urlCode = new URLSearchParams(window.location.search).get('code')?.toUpperCase() ?? null;
-  const [tab, setTab] = useState<'join' | 'create'>(urlCode ? 'join' : 'create');
+  const [tab, setTab] = useState<'join' | 'create'>('join');
   const [name, setName] = useState(() => localStorage.getItem('trakoons_player_name') || '');
   const [roomCode, setRoomCode] = useState(urlCode || '');
   const [error, setError] = useState('');
@@ -95,12 +95,14 @@ export function HomeScreen({ onRoomReady, send, onMessage, connected }: Props) {
         {/* Tab toggle */}
         <div className="flex rounded-lg overflow-hidden border border-stone-700 mb-6">
           <button
+            data-testid="tab-join"
             className={`flex-1 py-2 text-sm font-semibold transition-colors ${tab === 'join' ? 'bg-orange-500 text-white' : 'bg-stone-800 text-stone-400 hover:text-stone-200'}`}
             onClick={() => setTab('join')}
           >
             Join Room
           </button>
           <button
+            data-testid="tab-create"
             className={`flex-1 py-2 text-sm font-semibold transition-colors ${tab === 'create' ? 'bg-orange-500 text-white' : 'bg-stone-800 text-stone-400 hover:text-stone-200'}`}
             onClick={() => setTab('create')}
           >
@@ -136,6 +138,7 @@ export function HomeScreen({ onRoomReady, send, onMessage, connected }: Props) {
           )}
           <button
             type="submit"
+            data-testid="submit-btn"
             disabled={!connected || loading}
             className="w-full py-3 rounded-lg bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-base transition-colors"
           >

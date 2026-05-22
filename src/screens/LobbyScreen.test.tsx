@@ -1,10 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { LobbyScreen } from './LobbyScreen';
 import { Player } from '../gameTypes';
 
 const mockSend = vi.fn();
 const mockOnMessage = vi.fn(() => () => {});
+const mockOnPlayersChange = vi.fn();
+const mockOnModeChange = vi.fn();
+const mockOnHostChange = vi.fn();
+const mockOnGameStart = vi.fn();
+const mockOnLeave = vi.fn();
 
 function makePlayers(count: number): Player[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -21,16 +26,20 @@ const baseProps = {
   myColor: '#FF6B35',
   hostId: 'player-0',
   mode: 'ffa' as const,
-  onPlayersChange: vi.fn(),
-  onModeChange: vi.fn(),
-  onHostChange: vi.fn(),
-  onGameStart: vi.fn(),
-  onLeave: vi.fn(),
+  onPlayersChange: mockOnPlayersChange,
+  onModeChange: mockOnModeChange,
+  onHostChange: mockOnHostChange,
+  onGameStart: mockOnGameStart,
+  onLeave: mockOnLeave,
   send: mockSend,
   onMessage: mockOnMessage,
 };
 
 describe('LobbyScreen', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('displays the room code', () => {
     render(<LobbyScreen {...baseProps} players={makePlayers(1)} />);
     expect(screen.getByText('ABCD')).toBeInTheDocument();
