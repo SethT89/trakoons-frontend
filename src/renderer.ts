@@ -91,6 +91,20 @@ function drawRaccoon(
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(player.name.charAt(0).toUpperCase(), cx, cy);
+
+  // Name tag below
+  const tagText = player.name.length > 12 ? player.name.slice(0, 12) : player.name;
+  const tagY = cy + r + 10;
+  ctx.font = 'bold 11px monospace';
+  const tw = ctx.measureText(tagText).width;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  ctx.beginPath();
+  ctx.roundRect(cx - tw / 2 - 5, tagY - 7, tw + 10, 14, 3);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(tagText, cx, tagY);
 }
 
 /**
