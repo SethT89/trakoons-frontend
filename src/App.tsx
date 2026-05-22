@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGameSocket } from './useGameSocket';
-import { GameMode, GamePhase, Player } from './gameTypes';
+import { GameMode, GamePhase, GameOverPayload, Player } from './gameTypes';
 import { HomeScreen } from './screens/HomeScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { CountdownScreen } from './screens/CountdownScreen';
@@ -17,6 +17,7 @@ export default function App() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [mode, setMode] = useState<GameMode>('ffa');
   const [countdown, setCountdown] = useState(3);
+  const [gameOver, setGameOver] = useState<GameOverPayload | null>(null);
 
   // Handle countdown ticks and game start at App level so they work across all phases
   useEffect(() => {
@@ -29,6 +30,10 @@ export default function App() {
         setPlayers(msg.players);
         setMode(msg.mode);
         setPhase('playing');
+      }
+      if (msg.type === 'gameOver') {
+        setGameOver(msg);
+        setPhase('results');
       }
     });
   }, [onMessage]);
@@ -109,9 +114,10 @@ export default function App() {
   if (phase === 'results') {
     return (
       <ResultsScreen
-        players={players}
+        gameOver={gameOver}
         mode={mode}
-        onRematch={() => setPhase('lobby')}
+        myPlayerId={playerId}
+        onBackToLobby={() => setPhase('lobby')}
         onLeave={handleLeave}
       />
     );
