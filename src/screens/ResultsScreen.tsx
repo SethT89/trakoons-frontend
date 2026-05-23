@@ -49,7 +49,7 @@ export function ResultsScreen({ gameOver, mode, myPlayerId, onBackToLobby, onLea
               className={`flex items-center gap-3 px-3 py-2 rounded-lg ${isMe ? 'bg-stone-700' : 'bg-stone-800'}`}
             >
               <span className="text-stone-500 text-sm w-4 text-right">{i + 1}</span>
-              <div className="w-3 h-3 rounded-full shrink-0" style={{ background: score.color }} />
+              <div className="w-3 h-3 rounded-full shrink-0" style={{ background: isTeams && score.teamId !== null ? TEAM_COLORS[score.teamId as 0 | 1] : score.color }} />
               <span className={`flex-1 text-sm ${isMe ? 'text-yellow-300 font-bold' : 'text-stone-200'}`}>
                 {score.name}
               </span>

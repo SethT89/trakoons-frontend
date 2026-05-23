@@ -4,7 +4,12 @@ export function useGameInput() {
   const keys = useRef(new Set<string>());
 
   useEffect(() => {
-    const down = (e: KeyboardEvent) => keys.current.add(e.code);
+    const down = (e: KeyboardEvent) => {
+      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyA','KeyD','KeyW','KeyS'].includes(e.code)) {
+        e.preventDefault(); // stop page scrolling while playing
+      }
+      keys.current.add(e.code);
+    };
     const up   = (e: KeyboardEvent) => keys.current.delete(e.code);
     window.addEventListener('keydown', down);
     window.addEventListener('keyup',   up);

@@ -1,9 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import { Player, GameMode, GameState, ClientMessage, ServerMessage } from '../gameTypes';
+import { Player, GameMode, GameState, GameAsset, ClientMessage, ServerMessage } from '../gameTypes';
 import { useGameInput } from '../useGameInput';
 import { render } from '../renderer';
 
-const SPEED = 0.42; // units per frame at ~60 fps  (≈ 25 units/sec)
+const SPEED_PER_SEC = 25;  // game units per second (frame-rate independent)
+const MAX_DT = 0.05;       // clamp dt to 50ms — prevents huge jumps on tab focus
+const RACCOON_SIZE = 2;    // must match server RACCOON_SIZE
+
+/** Check if a raccoon at (x,y) overlaps any non-moving asset. Matches server's overlaps(). */
+function overlapsBlockingAsset(x: number, y: number, assets: GameAsset[]): boolean {
+  for (const a of assets) {
+    if (a.moving) continue;
+    if (!(x + RACCOON_SIZE <= a.x || a.x + a.w <= x ||
+          y + RACCOON_SIZE <= a.y || a.y + a.h <= y)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 interface Props {
   players: Player[];
@@ -14,12 +28,14 @@ interface Props {
 }
 
 export function GameScreen({ myPlayerId, mode, send, onMessage }: Props) {
-  const canvasRef    = useRef<HTMLCanvasElement>(null);
-  const stateRef     = useRef<GameState | null>(null);
-  const posRef       = useRef({ x: 50, y: 50 });
+  const canvasRef        = useRef<HTMLCanvasElement>(null);
+  const stateRef         = useRef<GameState | null>(null);
+  const posRef           = useRef({ x: 50, y: 50 });
+  const posInitRef       = useRef(false); // sync posRef from server only once at game start
+  const lastFrameRef     = useRef<number>(0); // performance.now() of previous frame, for dt
   const { getDirection } = useGameInput();
-  const rafRef       = useRef<number>(0);
-  const animRef      = useRef<Map<string, { startMs: number; color: string }>>(new Map());
+  const rafRef           = useRef<number>(0);
+  const animRef          = useRef<Map<string, { startMs: number; color: string }>>(new Map());
 
   // Listen for gameState messages
   useEffect(() => {
@@ -37,7 +53,22 @@ export function GameScreen({ myPlayerId, mode, send, onMessage }: Props) {
         }
         stateRef.current = msg;
         const me = msg.players.find(p => p.id === myPlayerId);
-        if (me) posRef.current = { x: me.x, y: me.y };
+        if (me) {
+          if (!posInitRef.current) {
+            // First state: snap to server spawn position
+            posRef.current = { x: me.x, y: me.y };
+            posInitRef.current = true;
+          } else {
+            // Client and server now use identical axis-separated collision, so
+            // their positions should agree. Only snap on huge drift (teleport,
+            // server reset, etc.).
+            const ddx = me.x - posRef.current.x;
+            const ddy = me.y - posRef.current.y;
+            if (ddx * ddx + ddy * ddy > 100) {
+              posRef.current = { x: me.x, y: me.y };
+            }
+          }
+        }
       }
     });
   }, [onMessage, myPlayerId]);
@@ -57,17 +88,43 @@ export function GameScreen({ myPlayerId, mode, send, onMessage }: Props) {
     ro.observe(canvas);
 
     function frame() {
+      // Frame-rate independent movement: scale by real elapsed time
+      const now = performance.now();
+      const dt = lastFrameRef.current === 0
+        ? 1 / 60
+        : Math.min(MAX_DT, (now - lastFrameRef.current) / 1000);
+      lastFrameRef.current = now;
+
       const { dx, dy } = getDirection();
       if (dx !== 0 || dy !== 0) {
-        posRef.current = {
-          x: Math.max(0, Math.min(98, posRef.current.x + dx * SPEED)),
-          y: Math.max(0, Math.min(98, posRef.current.y + dy * SPEED)),
-        };
-        send({ type: 'move', x: posRef.current.x, y: posRef.current.y });
+        // Divide x by aspect ratio so horizontal and vertical feel the same speed visually
+        const ar = canvas!.width / canvas!.height;
+        const stepX = dx * SPEED_PER_SEC * dt / ar;
+        const stepY = dy * SPEED_PER_SEC * dt;
+        const assets = stateRef.current?.assets ?? [];
+
+        // Unclamped desired position — what we'd be at with no collision.
+        // Send this to the server so it can detect overlap and tag the asset.
+        const desiredX = Math.max(0, Math.min(98, posRef.current.x + stepX));
+        const desiredY = Math.max(0, Math.min(98, posRef.current.y + stepY));
+
+        // Axis-separated collision for our own rendering (wall-slide feel).
+        // Server runs the same logic, so positions will agree.
+        let nx = desiredX;
+        if (overlapsBlockingAsset(nx, posRef.current.y, assets)) nx = posRef.current.x;
+        let ny = desiredY;
+        if (overlapsBlockingAsset(nx, ny, assets)) ny = posRef.current.y;
+
+        posRef.current = { x: nx, y: ny };
+        // Send the *desired* (unclamped) position so server can detect the
+        // overlap and tag the asset. Server clamps with its own collision.
+        send({ type: 'move', x: desiredX, y: desiredY });
       }
 
       const ctx = canvas!.getContext('2d');
-      if (ctx && stateRef.current) render(ctx, stateRef.current, myPlayerId, animRef.current);
+      if (ctx && stateRef.current) {
+        render(ctx, stateRef.current, myPlayerId, animRef.current, dx, dy, posRef.current);
+      }
 
       rafRef.current = requestAnimationFrame(frame);
     }
@@ -80,12 +137,14 @@ export function GameScreen({ myPlayerId, mode, send, onMessage }: Props) {
   }, [getDirection, send, myPlayerId]);
 
   return (
-    <div className="flex h-screen w-screen bg-stone-950">
-      {/* Game canvas */}
-      <canvas ref={canvasRef} className="flex-1 block" />
+    <div className="relative h-full w-full overflow-hidden bg-stone-950">
+      {/* Game canvas — full width now */}
+      <canvas ref={canvasRef} className="w-full h-full block" />
 
-      {/* HUD panel */}
-      <HudPanel stateRef={stateRef} myPlayerId={myPlayerId} mode={mode} />
+      {/* HUD — floating overlay top-right */}
+      <div className="absolute top-4 right-4">
+        <HudPanel stateRef={stateRef} myPlayerId={myPlayerId} mode={mode} />
+      </div>
     </div>
   );
 }
@@ -114,7 +173,7 @@ function HudPanel({ stateRef, myPlayerId, mode }: HudProps) {
   const ss = String(seconds % 60).padStart(2, '0');
 
   return (
-    <div className="w-24 bg-gray-900 flex flex-col p-1.5 gap-1 shrink-0">
+    <div className="w-40 bg-gray-900/85 backdrop-blur-sm rounded-xl flex flex-col p-2 gap-1 shadow-lg">
       {/* Frenzy badge */}
       {state?.frenzy && (
         <div className="bg-red-600 animate-pulse text-white text-center font-black text-[9px] tracking-[0.2em] rounded px-1 py-0.5">
@@ -188,10 +247,17 @@ function TeamsList({ state, myPlayerId }: { state: GameState; myPlayerId: string
     );
   }
 
+  const firstTeam  = total0 >= total1 ? 0 : 1;
+  const secondTeam = firstTeam === 0 ? 1 : 0;
+  const teams = [
+    { players: team0, total: total0, color: '#FF6B35', label: 'ORG' },
+    { players: team1, total: total1, color: '#4CC9F0', label: 'BLU' },
+  ];
+
   return (
     <>
-      <TeamBlock players={team0} total={total0} teamColor="#FF6B35" label="ORG" />
-      <TeamBlock players={team1} total={total1} teamColor="#4CC9F0" label="BLU" />
+      <TeamBlock players={teams[firstTeam].players}  total={teams[firstTeam].total}  teamColor={teams[firstTeam].color}  label={teams[firstTeam].label} />
+      <TeamBlock players={teams[secondTeam].players} total={teams[secondTeam].total} teamColor={teams[secondTeam].color} label={teams[secondTeam].label} />
     </>
   );
 }

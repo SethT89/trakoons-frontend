@@ -119,7 +119,7 @@ export default function App() {
         gameOver={gameOver}
         mode={mode}
         myPlayerId={playerId}
-        onBackToLobby={() => setPhase('lobby')}
+        onBackToLobby={() => { send({ type: 'backToLobby' }); setPhase('lobby'); }}
         onLeave={handleLeave}
       />
     );

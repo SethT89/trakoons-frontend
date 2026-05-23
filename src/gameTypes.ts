@@ -61,6 +61,7 @@ export type ClientMessage =
   | { type: 'removeBot'; botId: string }
   | { type: 'setBotTeam'; botId: string; teamId: 0 | 1 }
   | { type: 'startGame' }
+  | { type: 'backToLobby' }
   | { type: 'move'; x: number; y: number };
 
 export type ServerMessage =
