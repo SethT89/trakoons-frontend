@@ -39,10 +39,8 @@ trainSheet.src = '/trains.png';
 let trainSheetLoaded = false;
 trainSheet.onload = () => { trainSheetLoaded = true; };
 
-// Sprite coordinates in trains.png (sx, sy, sw, sh) — used by drawAsset in Task 6
-// @ts-expect-error Used by drawAsset in Task 6
+// Sprite coordinates in trains.png (sx, sy, sw, sh) — used by drawAsset
 const TRAIN_ENGINE_SPRITE  = { sx:   0, sy: 72, sw: 42, sh: 24 }; // orange diesel, row 3
-// @ts-expect-error Used by drawAsset in Task 6
 const TRAIN_CAR_SPRITES: Record<string, { sx: number; sy: number; sw: number; sh: number }> = {
   'train-car-1': { sx:  97, sy:  8, sw: 28, sh: 24 }, // yellow container, row 1
   'train-car-2': { sx: 129, sy:  8, sw: 28, sh: 24 }, // red container, row 1
@@ -243,18 +241,33 @@ function drawAsset(
     ctx.drawImage(dumpsterSheet, 0, sy, 128, 64,
       x + (w - drawW) / 2, y + (h - drawH) / 2, drawW, drawH);
     ctx.restore();
-  } else if ((asset.type === 'train-engine' || asset.type === 'train-car') && trainSheetLoaded) {
-    const sx = asset.type === 'train-engine' ? 0 : 48;
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    const spriteAR = 42 / 23;
-    const boxAR = w / h;
+  } else if (asset.type === 'train-engine' && trainSheetLoaded) {
+    const { sx, sy, sw, sh } = TRAIN_ENGINE_SPRITE;
+    const spriteAR = sw / sh;
+    const boxAR    = w / h;
     let drawW: number, drawH: number;
     if (spriteAR > boxAR) { drawW = w; drawH = w / spriteAR; }
-    else                  { drawH = h; drawW = h * spriteAR; }
-    ctx.drawImage(trainSheet, sx, 73, 42, 23,
+    else                   { drawH = h; drawW = h * spriteAR; }
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(trainSheet, sx, sy, sw, sh,
       x + (w - drawW) / 2, y + (h - drawH) / 2, drawW, drawH);
     ctx.restore();
+
+  } else if (asset.type === 'train-car' && trainSheetLoaded) {
+    const sprite = TRAIN_CAR_SPRITES[asset.id] ?? TRAIN_CAR_SPRITES['train-car-1'];
+    const { sx, sy, sw, sh } = sprite;
+    const spriteAR = sw / sh;
+    const boxAR    = w / h;
+    let drawW: number, drawH: number;
+    if (spriteAR > boxAR) { drawW = w; drawH = w / spriteAR; }
+    else                   { drawH = h; drawW = h * spriteAR; }
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(trainSheet, sx, sy, sw, sh,
+      x + (w - drawW) / 2, y + (h - drawH) / 2, drawW, drawH);
+    ctx.restore();
+
   } else if (asset.type === 'pickup-truck' && pickupSheetLoaded) {
     const row = getColorRow(asset.ownerColor);
     const sy = row * 64;
