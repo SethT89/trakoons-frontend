@@ -74,6 +74,7 @@ export type ServerMessage =
   | { type: 'playerKicked';   kickedPlayerId: string; players: Player[] }
   | { type: 'kicked' }
   | { type: 'hostChanged';    hostId: string }
+  | { type: 'getReady' }
   | { type: 'countdown';      count: number }
   | { type: 'gameStarted';    players: Player[]; mode: GameMode }
   | { type: 'error';          message: string }

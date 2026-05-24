@@ -137,7 +137,7 @@ export function GameScreen({ myPlayerId, mode, send, onMessage }: Props) {
   }, [getDirection, send, myPlayerId]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-stone-950">
+    <div className="relative h-screen w-full overflow-hidden bg-stone-950">
       {/* Game canvas — full width now */}
       <canvas ref={canvasRef} className="w-full h-full block" />
 

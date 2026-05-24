@@ -172,18 +172,16 @@ export function LobbyScreen({
                       {p.teamId === null && !canToggleTeam && (
                         <span className="text-stone-600 text-xs">no team</span>
                       )}
-                      {isHost && p.id !== playerId && (
-                        <button
-                          onClick={() => p.isBot
-                            ? send({ type: 'removeBot', botId: p.id })
-                            : send({ type: 'kickPlayer', playerId: p.id })
-                          }
-                          className="text-stone-600 hover:text-red-400 text-xs transition-colors ml-1"
-                          title={p.isBot ? `Remove ${p.name}` : `Kick ${p.name}`}
-                        >
-                          ✕
-                        </button>
-                      )}
+                      <button
+                        onClick={() => p.isBot
+                          ? send({ type: 'removeBot', botId: p.id })
+                          : send({ type: 'kickPlayer', playerId: p.id })
+                        }
+                        className={`text-xs ml-1 transition-colors ${isHost && p.id !== playerId ? 'text-stone-600 hover:text-red-400' : 'invisible pointer-events-none'}`}
+                        title={p.isBot ? `Remove ${p.name}` : `Kick ${p.name}`}
+                      >
+                        ✕
+                      </button>
                     </div>
                   </div>
                 );

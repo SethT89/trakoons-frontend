@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameSocket } from './useGameSocket';
 import { GameMode, GamePhase, GameOverPayload, Player } from './gameTypes';
 import { HomeScreen } from './screens/HomeScreen';
@@ -18,11 +18,16 @@ export default function App() {
   const [mode, setMode] = useState<GameMode>('ffa');
   const [countdown, setCountdown] = useState(3);
   const [gameOver, setGameOver] = useState<GameOverPayload | null>(null);
+  const [showGetReady, setShowGetReady] = useState(false);
 
   // Handle countdown ticks and game start at App level so they work across all phases
   useEffect(() => {
     return onMessage(msg => {
+      if (msg.type === 'getReady') {
+        setShowGetReady(true);
+      }
       if (msg.type === 'countdown') {
+        setShowGetReady(false);
         setCountdown(msg.count);
         setPhase('countdown');
       }
@@ -66,8 +71,10 @@ export default function App() {
     setPhase('playing');
   }
 
+  let screen: React.ReactNode = null;
+
   if (phase === 'home') {
-    return (
+    screen = (
       <HomeScreen
         onRoomReady={handleRoomReady}
         send={send}
@@ -75,10 +82,8 @@ export default function App() {
         connected={connected}
       />
     );
-  }
-
-  if (phase === 'lobby') {
-    return (
+  } else if (phase === 'lobby') {
+    screen = (
       <LobbyScreen
         roomCode={roomCode}
         playerId={playerId}
@@ -95,14 +100,10 @@ export default function App() {
         onMessage={onMessage}
       />
     );
-  }
-
-  if (phase === 'countdown') {
-    return <CountdownScreen count={countdown} />;
-  }
-
-  if (phase === 'playing') {
-    return (
+  } else if (phase === 'countdown') {
+    screen = <CountdownScreen count={countdown} />;
+  } else if (phase === 'playing') {
+    screen = (
       <GameScreen
         players={players}
         mode={mode}
@@ -111,10 +112,8 @@ export default function App() {
         onMessage={onMessage}
       />
     );
-  }
-
-  if (phase === 'results') {
-    return (
+  } else if (phase === 'results') {
+    screen = (
       <ResultsScreen
         gameOver={gameOver}
         mode={mode}
@@ -125,5 +124,17 @@ export default function App() {
     );
   }
 
-  return null;
+  return (
+    <div className="relative">
+      {screen}
+      {showGetReady && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-stone-800 border border-stone-600 rounded-2xl px-12 py-10 text-center shadow-2xl">
+            <p className="text-5xl font-black text-orange-400 tracking-wide mb-3">GET READY</p>
+            <p className="text-stone-400 text-sm uppercase tracking-widest">The host started the game</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
