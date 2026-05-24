@@ -15,6 +15,58 @@ let sandTileLoaded = false;
 sandTile.onload = () => { sandTileLoaded = true; };
 const TILE_DISPLAY_SIZE = 64; // pixels — display size of each tile (2× native for chunky look)
 
+// Pickup truck sprite sheet: 224×704px, 11 rows × 4 direction frames
+// Row 0 = gray (untagged), rows 1–10 = player colors in PLAYER_COLORS order
+// Frames per row: left(x=0,w=64,h=48) | right(x=64,w=64,h=48) | up(x=128,w=48,h=64) | down(x=176,w=48,h=64)
+const pickupSheet = new Image();
+pickupSheet.src = '/pickup-colors.png';
+let pickupSheetLoaded = false;
+pickupSheet.onload = () => { pickupSheetLoaded = true; };
+
+// Dumpster (container) sprite sheet: 128×704px, 11 rows × 64px each
+// Row 0 = gray (untagged), rows 1–10 = player colors in PICKUP_COLOR_ORDER order
+const dumpsterSheet = new Image();
+dumpsterSheet.src = '/dumpster-colors.png';
+let dumpsterSheetLoaded = false;
+dumpsterSheet.onload = () => { dumpsterSheetLoaded = true; };
+
+// trains.png: 192×192px sprite sheet
+// Row 1 (y=8–32):  full train strip — individual car sprites extracted by sx offset
+// Row 2 (y=40–64): hopper cars
+// Row 3 (y=72–96): orange engine (x=0), blue engine (x=48), track tile (x=96)
+const trainSheet = new Image();
+trainSheet.src = '/trains.png';
+let trainSheetLoaded = false;
+trainSheet.onload = () => { trainSheetLoaded = true; };
+
+// Sprite coordinates in trains.png (sx, sy, sw, sh) — exported for use in train asset drawing
+export const TRAIN_ENGINE_SPRITE  = { sx:   0, sy: 72, sw: 42, sh: 24 }; // orange diesel, row 3
+export const TRAIN_CAR_SPRITES: Record<string, { sx: number; sy: number; sw: number; sh: number }> = {
+  'train-car-1': { sx:  97, sy:  8, sw: 28, sh: 24 }, // yellow container, row 1
+  'train-car-2': { sx: 129, sy:  8, sw: 28, sh: 24 }, // red container, row 1
+  'train-car-3': { sx: 161, sy:  8, sw: 28, sh: 24 }, // green container, row 1
+  'train-car-4': { sx:   1, sy: 40, sw: 29, sh: 24 }, // orange hopper, row 2
+};
+const TRAIN_TRACK_SPRITE = { sx: 96, sy: 72, sw: 96, sh: 24 }; // track tile, row 3
+
+// Track layout in game coords: covers the train + buffer off-screen left
+const TRACK_X = -8;   // starts off-screen left
+const TRACK_Y =  8;   // same y as train assets
+const TRACK_W = 60;   // wide enough to cover engine at x=2 through car-4 right edge at x=48
+const TRACK_H =  6;   // matches train asset height
+
+const PICKUP_COLOR_ORDER = [
+  '#FF6B35', '#E63946', '#2EC4B6', '#FF9F1C',
+  '#C77DFF', '#4CC9F0', '#F72585', '#4ADE80',
+  '#FB8500', '#7209B7',
+];
+
+function getColorRow(ownerColor: string | null): number {
+  if (!ownerColor) return 0;
+  const idx = PICKUP_COLOR_ORDER.indexOf(ownerColor);
+  return idx >= 0 ? idx + 1 : 0;
+}
+
 // Decoration sprites
 function makeSprite(src: string) {
   const img = new Image(); img.src = src; return img;
@@ -88,6 +140,30 @@ function drawDecorations(ctx: CanvasRenderingContext2D) {
   ctx.restore();
 }
 
+function drawTrack(ctx: CanvasRenderingContext2D) {
+  if (!trainSheetLoaded) return;
+  const canvas = ctx.canvas;
+  const { sx, sy, sw, sh } = TRAIN_TRACK_SPRITE;
+  const destX = gx(canvas, TRACK_X);
+  const destY = gy(canvas, TRACK_Y);
+  const destW = gx(canvas, TRACK_W);
+  const destH = gy(canvas, TRACK_H);
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  // Tile the track sprite across destW
+  let drawn = 0;
+  const tileW = Math.round(sw * (destH / sh)); // scale tile to match destH
+  while (drawn < destW) {
+    const w = Math.min(tileW, destW - drawn);
+    // Source clip if last tile is partial
+    const srcW = Math.round(w * (sw / tileW));
+    ctx.drawImage(trainSheet, sx, sy, srcW, sh, destX + drawn, destY, w, destH);
+    drawn += tileW;
+  }
+  ctx.restore();
+}
+
 function drawAsset(
   ctx: CanvasRenderingContext2D,
   asset: GameAsset,
@@ -109,10 +185,11 @@ function drawAsset(
     ctx.strokeStyle = anim.color;
     ctx.lineWidth = 2;
 
+    const baseR = Math.max(w, h) / 2;
     const expand1 = 1 + elapsed / 700;
     ctx.globalAlpha = 0.8 * (1 - elapsed / 700);
     ctx.beginPath();
-    ctx.roundRect(cx - (w * expand1) / 2, cy - (h * expand1) / 2, w * expand1, h * expand1, 4);
+    ctx.arc(cx, cy, baseR * expand1, 0, Math.PI * 2);
     ctx.stroke();
 
     if (elapsed >= 180) {
@@ -120,7 +197,7 @@ function drawAsset(
       const expand2 = 1 + elapsed2 / 520;
       ctx.globalAlpha = 0.7 * (1 - elapsed2 / 520);
       ctx.beginPath();
-      ctx.roundRect(cx - (w * expand2) / 2, cy - (h * expand2) / 2, w * expand2, h * expand2, 4);
+      ctx.arc(cx, cy, baseR * expand2, 0, Math.PI * 2);
       ctx.stroke();
     }
 
@@ -145,11 +222,69 @@ function drawAsset(
     ctx.translate(-cx, -cy);
   }
 
-  // Asset body — trough renders as sprite, everything else as colored rectangle
+  // Asset body
   if (asset.type === 'trough' && sprBasin.complete && sprBasin.naturalWidth > 0) {
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(sprBasin, x, y, w, h);
+    ctx.restore();
+  } else if (asset.type === 'container' && dumpsterSheetLoaded) {
+    const row = getColorRow(asset.ownerColor);
+    const sy = row * 64;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    const spriteAR = 128 / 64;
+    const boxAR = w / h;
+    let drawW: number, drawH: number;
+    if (spriteAR > boxAR) { drawW = w; drawH = w / spriteAR; }
+    else                  { drawH = h; drawW = h * spriteAR; }
+    ctx.drawImage(dumpsterSheet, 0, sy, 128, 64,
+      x + (w - drawW) / 2, y + (h - drawH) / 2, drawW, drawH);
+    ctx.restore();
+  } else if ((asset.type === 'train-engine' || asset.type === 'train-car') && trainSheetLoaded) {
+    const sx = asset.type === 'train-engine' ? 0 : 48;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    const spriteAR = 42 / 23;
+    const boxAR = w / h;
+    let drawW: number, drawH: number;
+    if (spriteAR > boxAR) { drawW = w; drawH = w / spriteAR; }
+    else                  { drawH = h; drawW = h * spriteAR; }
+    ctx.drawImage(trainSheet, sx, 73, 42, 23,
+      x + (w - drawW) / 2, y + (h - drawH) / 2, drawW, drawH);
+    ctx.restore();
+  } else if (asset.type === 'pickup-truck' && pickupSheetLoaded) {
+    const row = getColorRow(asset.ownerColor);
+    const sy = row * 64;
+    // Pick frame column based on dominant velocity direction
+    const isSideView = Math.abs(asset.vx) >= Math.abs(asset.vy);
+    let sx: number, sw: number, sh: number;
+    if (isSideView) {
+      if (asset.vx >= 0) { sx = 64;  sw = 64; sh = 48; } // right
+      else               { sx = 0;   sw = 64; sh = 48; } // left
+    } else {
+      if (asset.vy >= 0) { sx = 176; sw = 48; sh = 64; } // down
+      else               { sx = 128; sw = 48; sh = 64; } // up
+    }
+    // For up/down views the truck length runs vertically — swap render box
+    // dimensions so both orientations draw at the same natural scale.
+    const boxW = isSideView ? w : h;
+    const boxH = isSideView ? h : w;
+    const boxX = isSideView ? x : cx - boxW / 2;
+    const boxY = isSideView ? y : cy - boxH / 2;
+    // Fit sprite inside box preserving natural aspect ratio
+    const spriteAR = sw / sh;
+    const boxAR = boxW / boxH;
+    let drawW: number, drawH: number;
+    if (spriteAR > boxAR) {
+      drawW = boxW; drawH = boxW / spriteAR;
+    } else {
+      drawH = boxH; drawW = boxH * spriteAR;
+    }
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(pickupSheet, sx, sy, sw, sh,
+      boxX + (boxW - drawW) / 2, boxY + (boxH - drawH) / 2, drawW, drawH);
     ctx.restore();
   } else {
     ctx.fillStyle = asset.ownerColor ?? '#555555';
@@ -163,16 +298,6 @@ function drawAsset(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, x + w / 2, y + h / 2);
-  }
-  if (asset.moving) {
-    const arrowLen = Math.min(w, h) * 0.3;
-    const angle = Math.atan2(asset.vy, asset.vx);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(angle) * arrowLen, cy + Math.sin(angle) * arrowLen);
-    ctx.stroke();
   }
 
   // Color flash (on top of asset, inside scale transform)
@@ -315,6 +440,7 @@ export function render(
   }
 
   drawBackground(ctx, state.frenzy);
+  drawTrack(ctx);
   drawDecorations(ctx);
 
   // Static assets first (behind moving ones)
