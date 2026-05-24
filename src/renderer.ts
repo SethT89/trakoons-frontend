@@ -39,9 +39,11 @@ trainSheet.src = '/trains.png';
 let trainSheetLoaded = false;
 trainSheet.onload = () => { trainSheetLoaded = true; };
 
-// Sprite coordinates in trains.png (sx, sy, sw, sh) — exported for use in train asset drawing
-export const TRAIN_ENGINE_SPRITE  = { sx:   0, sy: 72, sw: 42, sh: 24 }; // orange diesel, row 3
-export const TRAIN_CAR_SPRITES: Record<string, { sx: number; sy: number; sw: number; sh: number }> = {
+// Sprite coordinates in trains.png (sx, sy, sw, sh) — used by drawAsset in Task 6
+// @ts-expect-error Used by drawAsset in Task 6
+const TRAIN_ENGINE_SPRITE  = { sx:   0, sy: 72, sw: 42, sh: 24 }; // orange diesel, row 3
+// @ts-expect-error Used by drawAsset in Task 6
+const TRAIN_CAR_SPRITES: Record<string, { sx: number; sy: number; sw: number; sh: number }> = {
   'train-car-1': { sx:  97, sy:  8, sw: 28, sh: 24 }, // yellow container, row 1
   'train-car-2': { sx: 129, sy:  8, sw: 28, sh: 24 }, // red container, row 1
   'train-car-3': { sx: 161, sy:  8, sw: 28, sh: 24 }, // green container, row 1
