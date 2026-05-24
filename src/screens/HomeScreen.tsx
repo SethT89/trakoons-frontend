@@ -96,7 +96,7 @@ export function HomeScreen({ onRoomReady, send, onMessage, connected }: Props) {
       <div className="absolute inset-0 bg-black/35" />
 
       {/* Glass card */}
-      <div className="relative w-full max-w-sm bg-black/55 backdrop-blur-xl border border-white/[0.08] rounded-xl p-8">
+      <div className="relative w-full max-w-sm bg-black/10 backdrop-blur-xl border border-white/[0.08] rounded-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-5xl font-black text-orange-400 tracking-widest mb-2">TRAKOONS</h1>
           <p className="text-stone-400 text-sm">Tag every asset. Retag them all. 30 seconds of chaos.</p>
