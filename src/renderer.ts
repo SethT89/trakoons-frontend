@@ -248,6 +248,13 @@ function drawAsset(
     let drawW: number, drawH: number;
     if (spriteAR > boxAR) { drawW = w; drawH = w / spriteAR; }
     else                   { drawH = h; drawW = h * spriteAR; }
+    // Ownership glow — colored rect halo behind sprite
+    if (asset.ownerColor) {
+      ctx.save();
+      ctx.fillStyle = asset.ownerColor + '55';
+      ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+      ctx.restore();
+    }
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(trainSheet, sx, sy, sw, sh,
@@ -262,6 +269,13 @@ function drawAsset(
     let drawW: number, drawH: number;
     if (spriteAR > boxAR) { drawW = w; drawH = w / spriteAR; }
     else                   { drawH = h; drawW = h * spriteAR; }
+    // Ownership glow — colored rect halo behind sprite
+    if (asset.ownerColor) {
+      ctx.save();
+      ctx.fillStyle = asset.ownerColor + '55';
+      ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+      ctx.restore();
+    }
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(trainSheet, sx, sy, sw, sh,
