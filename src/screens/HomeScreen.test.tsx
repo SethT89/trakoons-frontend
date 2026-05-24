@@ -81,4 +81,10 @@ describe('HomeScreen', () => {
     const input = screen.getByPlaceholderText(/room code/i) as HTMLInputElement;
     expect(input.value).toBe('XYZA');
   });
+
+  it('renders the promo background image on desktop', () => {
+    render(<HomeScreen {...defaultProps} />);
+    const img = screen.getByRole('img', { hidden: true });
+    expect(img).toHaveAttribute('src', '/trakoons_promo_image.png');
+  });
 });
