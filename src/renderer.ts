@@ -40,12 +40,12 @@ let trainSheetLoaded = false;
 trainSheet.onload = () => { trainSheetLoaded = true; };
 
 // Sprite coordinates in trains.png (sx, sy, sw, sh) — used by drawAsset
-const TRAIN_ENGINE_SPRITE  = { sx:   0, sy: 72, sw: 42, sh: 24 }; // orange diesel, row 3
+const TRAIN_ENGINE_SPRITE  = { sx:  0, sy: 73, sw: 42, sh: 21 }; // orange diesel, row 3 (tight crop)
 const TRAIN_CAR_SPRITES: Record<string, { sx: number; sy: number; sw: number; sh: number }> = {
-  'train-car-1': { sx:  97, sy:  8, sw: 28, sh: 24 }, // yellow container, row 1
-  'train-car-2': { sx: 129, sy:  8, sw: 28, sh: 24 }, // red container, row 1
-  'train-car-3': { sx: 161, sy:  8, sw: 28, sh: 24 }, // green container, row 1
-  'train-car-4': { sx:   1, sy: 40, sw: 29, sh: 24 }, // orange hopper, row 2
+  'train-car-1': { sx:  97, sy: 11, sw: 28, sh: 19 }, // yellow container, row 1 (tight crop)
+  'train-car-2': { sx: 129, sy: 11, sw: 28, sh: 19 }, // red container, row 1 (tight crop)
+  'train-car-3': { sx: 161, sy: 11, sw: 28, sh: 19 }, // green container, row 1 (tight crop)
+  'train-car-4': { sx:   1, sy: 43, sw: 29, sh: 19 }, // orange hopper, row 2 (tight crop)
 };
 const TRAIN_TRACK_SPRITE = { sx: 96, sy: 72, sw: 96, sh: 24 }; // track tile, row 3
 
@@ -243,12 +243,6 @@ function drawAsset(
     ctx.restore();
   } else if (asset.type === 'train-engine' && trainSheetLoaded) {
     const { sx, sy, sw, sh } = TRAIN_ENGINE_SPRITE;
-    const spriteAR = sw / sh;
-    const boxAR    = w / h;
-    let drawW: number, drawH: number;
-    if (spriteAR > boxAR) { drawW = w; drawH = w / spriteAR; }
-    else                   { drawH = h; drawW = h * spriteAR; }
-    // Ownership glow — colored rect halo behind sprite
     if (asset.ownerColor) {
       ctx.save();
       ctx.fillStyle = asset.ownerColor + '55';
@@ -257,19 +251,14 @@ function drawAsset(
     }
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(trainSheet, sx, sy, sw, sh,
-      x + (w - drawW) / 2, y + (h - drawH) / 2, drawW, drawH);
+    // Flip engine horizontally so it faces left (toward the exit)
+    ctx.translate(x + w, y);
+    ctx.scale(-1, 1);
+    ctx.drawImage(trainSheet, sx, sy, sw, sh, 0, 0, w, h);
     ctx.restore();
 
   } else if (asset.type === 'train-car' && trainSheetLoaded) {
-    const sprite = TRAIN_CAR_SPRITES[asset.id] ?? TRAIN_CAR_SPRITES['train-car-1'];
-    const { sx, sy, sw, sh } = sprite;
-    const spriteAR = sw / sh;
-    const boxAR    = w / h;
-    let drawW: number, drawH: number;
-    if (spriteAR > boxAR) { drawW = w; drawH = w / spriteAR; }
-    else                   { drawH = h; drawW = h * spriteAR; }
-    // Ownership glow — colored rect halo behind sprite
+    const { sx, sy, sw, sh } = TRAIN_CAR_SPRITES[asset.id] ?? TRAIN_CAR_SPRITES['train-car-1'];
     if (asset.ownerColor) {
       ctx.save();
       ctx.fillStyle = asset.ownerColor + '55';
@@ -278,8 +267,7 @@ function drawAsset(
     }
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(trainSheet, sx, sy, sw, sh,
-      x + (w - drawW) / 2, y + (h - drawH) / 2, drawW, drawH);
+    ctx.drawImage(trainSheet, sx, sy, sw, sh, x, y, w, h);
     ctx.restore();
 
   } else if (asset.type === 'pickup-truck' && pickupSheetLoaded) {
