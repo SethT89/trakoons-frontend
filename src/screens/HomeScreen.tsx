@@ -85,8 +85,18 @@ export function HomeScreen({ onRoomReady, send, onMessage, connected }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-stone-900 flex items-center justify-center p-6">
-      <div className="w-full max-w-sm">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background image */}
+      <img
+        src="/trakoons_promo_image.png"
+        aria-hidden
+        className="absolute inset-0 w-full h-full object-cover object-center"
+      />
+      {/* Dark scrim */}
+      <div className="absolute inset-0 bg-black/35" />
+
+      {/* Glass card */}
+      <div className="relative w-full max-w-sm bg-black/55 backdrop-blur-xl border border-white/[0.08] rounded-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-5xl font-black text-orange-400 tracking-widest mb-2">TRAKOONS</h1>
           <p className="text-stone-400 text-sm">Tag every asset. Retag them all. 30 seconds of chaos.</p>
