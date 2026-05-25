@@ -55,15 +55,30 @@ const TRACK_Y =  8;   // same y as train assets
 const TRACK_W = 60;   // wide enough to cover engine at x=2 through car-6 right edge at x=39
 const TRACK_H =  6;   // matches train asset height
 
+// Row order for pickup-colors.png and dumpster-colors.png
 const PICKUP_COLOR_ORDER = [
   '#FF6B35', '#E63946', '#2EC4B6', '#FF9F1C',
   '#C77DFF', '#4CC9F0', '#F72585', '#4ADE80',
   '#FB8500', '#7209B7',
 ];
 
+// Row order for train-engine-colors.png and train-car-colors.png
+// (generated from PLAYER_COLORS order in rooms.js)
+const TRAIN_COLOR_ORDER = [
+  '#FF6B35', '#2EC4B6', '#FF9F1C', '#C77DFF',
+  '#4CC9F0', '#F72585', '#4ADE80', '#FB8500',
+  '#7209B7', '#E63946',
+];
+
 function getColorRow(ownerColor: string | null): number {
   if (!ownerColor) return 0;
   const idx = PICKUP_COLOR_ORDER.indexOf(ownerColor);
+  return idx >= 0 ? idx + 1 : 0;
+}
+
+function getTrainColorRow(ownerColor: string | null): number {
+  if (!ownerColor) return 0;
+  const idx = TRAIN_COLOR_ORDER.indexOf(ownerColor);
   return idx >= 0 ? idx + 1 : 0;
 }
 
@@ -242,7 +257,7 @@ function drawAsset(
       x + (w - drawW) / 2, y + (h - drawH) / 2, drawW, drawH);
     ctx.restore();
   } else if (asset.type === 'train-engine' && trainEngineSheetLoaded) {
-    const row = getColorRow(asset.ownerColor);
+    const row = getTrainColorRow(asset.ownerColor);
     const rowH = 21;
     ctx.save();
     ctx.imageSmoothingEnabled = false;
@@ -253,7 +268,7 @@ function drawAsset(
     ctx.restore();
 
   } else if (asset.type === 'train-car' && trainCarSheetLoaded) {
-    const row = getColorRow(asset.ownerColor);
+    const row = getTrainColorRow(asset.ownerColor);
     const rowH = 19;
     ctx.save();
     ctx.imageSmoothingEnabled = false;
