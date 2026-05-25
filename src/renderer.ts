@@ -30,23 +30,23 @@ dumpsterSheet.src = '/dumpster-colors.png';
 let dumpsterSheetLoaded = false;
 dumpsterSheet.onload = () => { dumpsterSheetLoaded = true; };
 
-// trains.png: 192×192px sprite sheet
-// Row 1 (y=8–32):  full train strip — individual car sprites extracted by sx offset
-// Row 2 (y=40–64): hopper cars
-// Row 3 (y=72–96): orange engine (x=0), blue engine (x=48), track tile (x=96)
+// trains.png: source sheet — used only for the track tile decoration
 const trainSheet = new Image();
 trainSheet.src = '/trains.png';
 let trainSheetLoaded = false;
 trainSheet.onload = () => { trainSheetLoaded = true; };
 
-// Sprite coordinates in trains.png (sx, sy, sw, sh) — used by drawAsset
-const TRAIN_ENGINE_SPRITE  = { sx:  0, sy: 73, sw: 42, sh: 21 }; // orange diesel, row 3 (tight crop)
-const TRAIN_CAR_SPRITES: Record<string, { sx: number; sy: number; sw: number; sh: number }> = {
-  'train-car-1': { sx:  97, sy: 11, sw: 28, sh: 19 }, // yellow container, row 1 (tight crop)
-  'train-car-2': { sx: 129, sy: 11, sw: 28, sh: 19 }, // red container, row 1 (tight crop)
-  'train-car-3': { sx: 161, sy: 11, sw: 28, sh: 19 }, // green container, row 1 (tight crop)
-  'train-car-4': { sx:   1, sy: 43, sw: 29, sh: 19 }, // orange hopper, row 2 (tight crop)
-};
+// train-engine-colors.png: 42×231px, 11 rows × 21px  (row 0 = gray, rows 1–10 = player colors)
+const trainEngineSheet = new Image();
+trainEngineSheet.src = '/train-engine-colors.png';
+let trainEngineSheetLoaded = false;
+trainEngineSheet.onload = () => { trainEngineSheetLoaded = true; };
+
+// train-car-colors.png: 28×209px, 11 rows × 19px  (row 0 = gray, rows 1–10 = player colors)
+const trainCarSheet = new Image();
+trainCarSheet.src = '/train-car-colors.png';
+let trainCarSheetLoaded = false;
+trainCarSheet.onload = () => { trainCarSheetLoaded = true; };
 const TRAIN_TRACK_SPRITE = { sx: 96, sy: 72, sw: 96, sh: 24 }; // track tile, row 3
 
 // Track layout in game coords: covers the train + buffer off-screen left
@@ -241,33 +241,23 @@ function drawAsset(
     ctx.drawImage(dumpsterSheet, 0, sy, 128, 64,
       x + (w - drawW) / 2, y + (h - drawH) / 2, drawW, drawH);
     ctx.restore();
-  } else if (asset.type === 'train-engine' && trainSheetLoaded) {
-    const { sx, sy, sw, sh } = TRAIN_ENGINE_SPRITE;
-    if (asset.ownerColor) {
-      ctx.save();
-      ctx.fillStyle = asset.ownerColor + '55';
-      ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
-      ctx.restore();
-    }
+  } else if (asset.type === 'train-engine' && trainEngineSheetLoaded) {
+    const row = getColorRow(asset.ownerColor);
+    const rowH = 21;
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     // Flip engine horizontally so it faces left (toward the exit)
     ctx.translate(x + w, y);
     ctx.scale(-1, 1);
-    ctx.drawImage(trainSheet, sx, sy, sw, sh, 0, 0, w, h);
+    ctx.drawImage(trainEngineSheet, 0, row * rowH, 42, rowH, 0, 0, w, h);
     ctx.restore();
 
-  } else if (asset.type === 'train-car' && trainSheetLoaded) {
-    const { sx, sy, sw, sh } = TRAIN_CAR_SPRITES[asset.id] ?? TRAIN_CAR_SPRITES['train-car-1'];
-    if (asset.ownerColor) {
-      ctx.save();
-      ctx.fillStyle = asset.ownerColor + '55';
-      ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
-      ctx.restore();
-    }
+  } else if (asset.type === 'train-car' && trainCarSheetLoaded) {
+    const row = getColorRow(asset.ownerColor);
+    const rowH = 19;
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(trainSheet, sx, sy, sw, sh, x, y, w, h);
+    ctx.drawImage(trainCarSheet, 0, row * rowH, 28, rowH, x, y, w, h);
     ctx.restore();
 
   } else if (asset.type === 'pickup-truck' && pickupSheetLoaded) {
