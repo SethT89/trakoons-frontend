@@ -396,7 +396,7 @@ function drawRaccoon(
     const tw      = ctx.measureText(tagText).width;
     const padX    = 10, chipH = 26, cornerR = 5;
     const chipW   = tw + padX * 2;
-    const arrowW  = 9, arrowH = 13, gap = 4;
+    const arrowW  = 9, arrowH = 8, gap = 4;
     const chipX   = cx - chipW / 2;
     const chipR   = chipX + chipW;
     const arrowTipY = cy - r * 2 - gap;
