@@ -10,7 +10,6 @@ const RACCOON_SIZE = 2;    // must match server RACCOON_SIZE
 /** Check if a raccoon at (x,y) overlaps any non-moving asset. Matches server's overlaps(). */
 function overlapsBlockingAsset(x: number, y: number, assets: GameAsset[]): boolean {
   for (const a of assets) {
-    if (a.moving) continue;
     if (!(x + RACCOON_SIZE <= a.x || a.x + a.w <= x ||
           y + RACCOON_SIZE <= a.y || a.y + a.h <= y)) {
       return true;
@@ -121,16 +120,28 @@ export function GameScreen({ myPlayerId, mode, send, onMessage }: Props) {
         send({ type: 'move', x: desiredX, y: desiredY });
       }
 
-      // Eject from any blocking asset we may have drifted into (e.g. train arriving).
-      // Runs every frame so the train pushing into a stationary player is caught immediately.
+      // Eject from any asset we may have drifted into (train arriving, truck pushing).
+      // Runs every frame so external forces are caught immediately without key input.
       {
         const assets = stateRef.current?.assets ?? [];
         for (const a of assets) {
-          if (a.moving) continue;
           const { x: px, y: py } = posRef.current;
           if (!(px + RACCOON_SIZE <= a.x || a.x + a.w <= px ||
                 py + RACCOON_SIZE <= a.y || a.y + a.h <= py)) {
-            posRef.current = { ...posRef.current, y: Math.min(98, a.y + a.h) };
+            if (a.moving) {
+              // Push in the vehicle's direction of travel
+              if (Math.abs(a.vx) >= Math.abs(a.vy)) {
+                posRef.current = a.vx >= 0
+                  ? { ...posRef.current, x: Math.min(98, a.x + a.w) }
+                  : { ...posRef.current, x: Math.max(0, a.x - RACCOON_SIZE) };
+              } else {
+                posRef.current = a.vy >= 0
+                  ? { ...posRef.current, y: Math.min(98, a.y + a.h) }
+                  : { ...posRef.current, y: Math.max(0, a.y - RACCOON_SIZE) };
+              }
+            } else {
+              posRef.current = { ...posRef.current, y: Math.min(98, a.y + a.h) };
+            }
           }
         }
       }
