@@ -483,18 +483,28 @@ export function render(
   drawTrack(ctx);
   drawDecorations(ctx);
 
-  // Static assets first (behind moving ones)
-  for (const asset of state.assets) {
-    if (!asset.moving) drawAsset(ctx, asset, anims.get(asset.id));
-  }
-  for (const asset of state.assets) {
-    if (asset.moving) drawAsset(ctx, asset, anims.get(asset.id));
-  }
+  // Depth-sort assets and raccoons by bottom-y so objects nearer the viewer render on top
+  const RACCOON_DIAM = 2;
+  type Drawable =
+    | { kind: 'asset';   asset: GameAsset; anim?: { startMs: number; color: string } }
+    | { kind: 'raccoon'; player: GameState['players'][number]; isMe: boolean; dx: number; dy: number };
 
+  const drawables: Drawable[] = [];
+  for (const asset of state.assets) {
+    drawables.push({ kind: 'asset', asset, anim: anims.get(asset.id) });
+  }
   for (const player of state.players) {
     const isMe = player.id === myPlayerId;
-    // Use client-predicted position for local player so movement feels instant
     const displayPlayer = isMe ? { ...player, x: myPos.x, y: myPos.y } : player;
-    drawRaccoon(ctx, displayPlayer, isMe, isMe ? myDx : 0, isMe ? myDy : 0);
+    drawables.push({ kind: 'raccoon', player: displayPlayer, isMe, dx: isMe ? myDx : 0, dy: isMe ? myDy : 0 });
+  }
+  drawables.sort((a, b) => {
+    const aBot = a.kind === 'asset' ? a.asset.y + a.asset.h : a.player.y + RACCOON_DIAM;
+    const bBot = b.kind === 'asset' ? b.asset.y + b.asset.h : b.player.y + RACCOON_DIAM;
+    return aBot - bBot;
+  });
+  for (const d of drawables) {
+    if (d.kind === 'asset') drawAsset(ctx, d.asset, d.anim);
+    else drawRaccoon(ctx, d.player, d.isMe, d.dx, d.dy);
   }
 }
