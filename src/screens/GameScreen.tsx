@@ -121,6 +121,20 @@ export function GameScreen({ myPlayerId, mode, send, onMessage }: Props) {
         send({ type: 'move', x: desiredX, y: desiredY });
       }
 
+      // Eject from any blocking asset we may have drifted into (e.g. train arriving).
+      // Runs every frame so the train pushing into a stationary player is caught immediately.
+      {
+        const assets = stateRef.current?.assets ?? [];
+        for (const a of assets) {
+          if (a.moving) continue;
+          const { x: px, y: py } = posRef.current;
+          if (!(px + RACCOON_SIZE <= a.x || a.x + a.w <= px ||
+                py + RACCOON_SIZE <= a.y || a.y + a.h <= py)) {
+            posRef.current = { ...posRef.current, y: Math.min(98, a.y + a.h) };
+          }
+        }
+      }
+
       const ctx = canvas!.getContext('2d');
       if (ctx && stateRef.current) {
         render(ctx, stateRef.current, myPlayerId, animRef.current, dx, dy, posRef.current);
