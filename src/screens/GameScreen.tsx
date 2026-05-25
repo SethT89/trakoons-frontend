@@ -3,7 +3,7 @@ import { Player, GameMode, GameState, GameAsset, ClientMessage, ServerMessage } 
 import { useGameInput } from '../useGameInput';
 import { render } from '../renderer';
 
-const SPEED_PER_SEC = 25;  // game units per second (frame-rate independent)
+const SPEED_PER_SEC = 30;  // game units per second (frame-rate independent)
 const MAX_DT = 0.05;       // clamp dt to 50ms — prevents huge jumps on tab focus
 const RACCOON_SIZE = 2;    // must match server RACCOON_SIZE
 
