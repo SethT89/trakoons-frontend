@@ -1,4 +1,4 @@
-import { GameState, GameAsset, TEAM_COLORS } from './gameTypes';
+import { GameState, GameAsset } from './gameTypes';
 
 const RACCOON_RADIUS = 1; // in game units (game space is 0-100)
 
@@ -375,29 +375,6 @@ function drawRaccoon(
   const spriteSx = col * SPRITE_W;
   const spriteSy = row * SPRITE_H;
 
-  // ── Colored team glow (sized to sprite: sprite radius = r*2) ──
-  const glowColor = (player.teamId === 0 || player.teamId === 1)
-    ? TEAM_COLORS[player.teamId]
-    : player.color;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 2.3, 0, Math.PI * 2);
-  ctx.fillStyle = glowColor + '55';
-  ctx.fill();
-  ctx.restore();
-
-  // ── "You" dashed ring (encircles the full sprite) ──
-  if (isMe) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * 2.8, 0, Math.PI * 2);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 3]);
-    ctx.stroke();
-    ctx.restore();
-  }
-
   // ── Raccoon sprite ──
   ctx.save();
   ctx.imageSmoothingEnabled = false;
@@ -412,19 +389,60 @@ function drawRaccoon(
   }
   ctx.restore();
 
-  // ── Name tag (below the "you" ring when present, else below sprite) ──
-  const tagText = player.name.length > 12 ? player.name.slice(0, 12) : player.name;
-  const tagY = cy + r * 2.8 + 8;
-  ctx.font = 'bold 11px monospace';
-  const tw = ctx.measureText(tagText).width;
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-  ctx.beginPath();
-  ctx.roundRect(cx - tw / 2 - 5, tagY - 7, tw + 10, 14, 3);
-  ctx.fill();
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(tagText, cx, tagY);
+  // ── Callout name tag — only shown for the local player ──
+  if (isMe) {
+    const tagText = player.name.length > 12 ? player.name.slice(0, 12) : player.name;
+    ctx.font = 'bold 14px monospace';
+    const tw      = ctx.measureText(tagText).width;
+    const padX    = 10, chipH = 26, cornerR = 5;
+    const chipW   = tw + padX * 2;
+    const arrowW  = 9, arrowH = 13, gap = 4;
+    const chipX   = cx - chipW / 2;
+    const chipR   = chipX + chipW;
+    const arrowTipY = cy - r * 2 - gap;
+    const chipY   = arrowTipY - arrowH - chipH;
+    const t = chipY, b = chipY + chipH;
+
+    // Single path: rounded rect + downward arrow as one unified shape
+    const drawCallout = () => {
+      ctx.beginPath();
+      ctx.moveTo(chipX + cornerR, t);
+      ctx.lineTo(chipR - cornerR, t);
+      ctx.arcTo(chipR, t,  chipR, t + cornerR, cornerR);
+      ctx.lineTo(chipR, b - cornerR);
+      ctx.arcTo(chipR, b,  chipR - cornerR, b, cornerR);
+      ctx.lineTo(cx + arrowW, b);
+      ctx.lineTo(cx, arrowTipY);            // arrow tip
+      ctx.lineTo(cx - arrowW, b);
+      ctx.lineTo(chipX + cornerR, b);
+      ctx.arcTo(chipX, b,  chipX, b - cornerR, cornerR);
+      ctx.lineTo(chipX, t + cornerR);
+      ctx.arcTo(chipX, t,  chipX + cornerR, t, cornerR);
+      ctx.closePath();
+    };
+
+    // Fill
+    ctx.save();
+    drawCallout();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+    ctx.fill();
+    ctx.restore();
+
+    // Outline in player color — traces the full combined shape
+    ctx.save();
+    drawCallout();
+    ctx.strokeStyle = player.color;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // Label
+    ctx.font = 'bold 14px monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tagText, cx, chipY + chipH / 2);
+  }
 }
 
 /**
