@@ -52,7 +52,7 @@ const TRAIN_TRACK_SPRITE = { sx: 96, sy: 72, sw: 96, sh: 24 }; // track tile, ro
 // Track layout in game coords: covers the train + buffer off-screen left
 const TRACK_X = -8;   // starts off-screen left
 const TRACK_Y =  8;   // same y as train assets
-const TRACK_W = 60;   // wide enough to cover engine at x=2 through car-4 right edge at x=48
+const TRACK_W = 60;   // wide enough to cover engine at x=2 through car-6 right edge at x=39
 const TRACK_H =  6;   // matches train asset height
 
 const PICKUP_COLOR_ORDER = [
